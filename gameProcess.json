@@ -1,0 +1,86 @@
+{
+    "gameStarted": false,
+    "gameEnd": false,
+    "round": -1,
+    "countOfPlayers": 1,
+    "gamePaused": false,
+    "gamePausedByModerator": false,
+    "maxCows": 3,
+    "lastRound": 0,
+    "time": 0,
+    "isYieldGood": false,
+    "yieldSector": 0,
+    "trampledSectors": {
+        "players": [],
+        "sectors": []
+    },
+    "world":{
+        "fieldCapacity": 8,
+        "sector1":{
+            "capacity": 2
+        },
+        "sector2":{
+            "capacity": 2
+        },
+        "sector3":{
+            "capacity": 2
+        },
+        "sector4":{
+            "capacity": 2
+        }
+    },
+    "players":{
+        "player1":{
+            "id": 0,
+            "name": "",
+            "money": 4,
+            "cows": 0,
+            "secretCows": -1,
+            "isNewRound": false,
+            "isRoundEnd": false,
+            "fedCows": 0,
+            "sector": 1,
+            "playerOut": false,
+            "checked": 0
+        },
+        "player2":{
+            "id": 0,
+            "name": "",
+            "money": 4,
+            "cows": 0,
+            "secretCows": -1,
+            "isNewRound": false,
+            "isRoundEnd": false,
+            "fedCows": 0,
+            "sector": 2,
+            "playerOut": false,
+            "checked": 0
+        },
+        "player3":{
+            "id": 0,
+            "name": "",
+            "money": 4,
+            "cows": 0,
+            "secretCows": -1,
+            "isNewRound": false,
+            "isRoundEnd": false,
+            "fedCows": 0,
+            "sector": 3,
+            "playerOut": false,
+            "checked": 0
+        },
+        "player4":{
+            "id": 0,
+            "name": "",
+            "money": 4,
+            "cows": 0,
+            "secretCows": -1,
+            "isNewRound": false,
+            "isRoundEnd": false,
+            "fedCows": 0,
+            "sector": 4,
+            "playerOut": false,
+            "checked": 0
+        }
+    }
+}

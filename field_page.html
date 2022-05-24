@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Общее дело</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-uWxY/CJNBR+1zjPWmfnSnVxwRheevXITnMqoEIeG1LJrdI0GlVs/9cVSyPYXdcSF" crossorigin="anonymous">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-kQtW33rZJAHjgefvhyyzcGF3C5TFyBQBA13V1RKPf4uH+bwyzQxZ6CmMZHmNBEfJ" crossorigin="anonymous"></script>
+    <script src="jquery-1.7.1.min.js" type="text/javascript"></script>
+    <link rel="stylesheet" href="style.css">
+    <script>
+        
+        function closeGame(){
+            $.ajax({
+                url: "closeGame.php",
+                method: "post",
+                data: {},
+                success: function(result) {
+                    result = JSON.parse(result)
+                    if (result.result == true){
+                        location.reload()
+                    }
+                    else{
+                        //error
+                    }
+                },
+                async: false
+            })
+        }
+        let timer = 30
+        function updateInformation(){
+            let gameKeep = true
+            $.ajax({
+                url: "updateInformation.php",
+                method: "post",
+                data: {},
+                success: function(result) {
+                    console.dir(result)
+                    result = JSON.parse(result)
+                    if (result.result == true){
+                        if ('gamePausedByModerator' in result){
+                            if (result.gamePausedByModerator == true){
+                                $('#gamePaused').modal('show')
+                            }
+                            else{
+                                $('#gamePaused').modal('hide')
+                            }
+                        }
+                        if ('gameClosed' in result){
+                            location.reload()
+                        }
+                        else{
+                            for (let i in result.players){
+                                let sector = document.querySelector("#sector"+result.players[i].sector)
+                                sector.children[0].children[2].children[0].children[0].innerHTML = result.players[i].name == ""?"Не подключился":result.players[i].name
+                                sector.children[0].children[3].children[0].children[1].innerHTML = result.players[i].money
+                                sector.children[0].children[3].children[2].children[1].innerHTML = result.players[i].cows
+                                sector.children[0].children[3].children[2].children[4].innerHTML = result.players[i].fedCows
+                            }
+                            for (let i in result.sectors){
+                                let sector = document.querySelector("#"+i)
+                                sector.children[0].children[0].children[0].children[2].innerHTML = "Емкость: "+result.sectors[i].capacity
+                            }
+                            if ('light' in result){
+                                $('#sector1').removeClass('border-warning')
+                                $("#sector1").find(".img-fluid").removeClass('currentCow')
+                                $('#sector2').removeClass('border-warning')
+                                $("#sector2").find(".img-fluid").removeClass('currentCow')
+                                $('#sector3').removeClass('border-warning')
+                                $("#sector3").find(".img-fluid").removeClass('currentCow')
+                                $('#sector4').removeClass('border-warning')
+                                $("#sector4").find(".img-fluid").removeClass('currentCow')
+                                $('#sector'+result.light).addClass('border-warning')
+                                $('#sector'+result.light).find(".img-fluid").addClass('currentCow')
+                            }
+                            if ("fieldCapacity" in result){
+                                document.querySelector("#information").children[1].innerHTML = "Емкость поля: "+result.fieldCapacity
+                            }
+                            if ("gameEnd" in result){
+                                $('#fieldInfo').modal('hide')
+                                $('#makeMove').modal('hide')
+                                $('#makeMoveButton').addClass('visually-hidden')
+                                $('#endInfo').modal('show')
+                                document.querySelector("#endInfoText").innerHTML = "<span>"+result["endReason"]+"</span>"
+                                gameKeep = false
+                            }
+                            else{
+                                if("newRound" in result){
+                                    $('#fieldInfo').modal('hide')
+                                    document.querySelector("#makeMove").children[0].children[0].children[1].children[0].innerHTML = "Вы занимаете сектор "+result.light+". Его емкость - "+result.sectors['sector'+result.light].capacity
+                                    document.querySelector("#makeMove").children[0].children[0].children[1].children[2].innerHTML = result.cowsBet
+                                    $('#makeMove').modal('show')
+                                    $('#makeMoveButton').removeClass('visually-hidden')
+                                    document.querySelector("#makeMoveLabel").innerHTML = "До конца хода осталось: 30"
+                                    timer = 30
+                                }
+                                if ("roundEnd" in result){
+                                    $('#makeMove').modal('hide')
+                                    $('#makeMoveButton').addClass('visually-hidden')
+                                    let info = document.querySelector("#fieldInfoText")
+                                    info.children[0].innerHTML = result['yield']
+                                    info.children[1].innerHTML = result['trampled']
+                                    $('#fieldInfo').modal('show')
+                                }
+                                if ('round' in result){
+                                    document.querySelector("#information").children[0].innerHTML = result.round
+                                    document.querySelector("#makeMoveLabel").innerHTML = "До конца хода осталось: "+timer
+                                    --timer
+                                    if (timer < 0){timer = 0}
+                                }
+                            }
+                        }
+                    }
+                    else{
+                        //error
+                    }
+                },
+                async: false
+            })
+            if (gameKeep){
+                setTimeout(updateInformation, 1000)
+            }
+        }
+        function showMakeMoveModal(){
+            $('#makeMove').modal('show')
+        }
+        function submitCows(cows){
+            $.ajax({
+                url: "submitCows.php",
+                method: "post",
+                data: {
+                    cows: cows
+                },
+                success: function(result) {
+                    result = JSON.parse(result)
+                    if (result.result == true){
+                        $('#makeMove').modal('hide')
+                        $('#makeMoveButton').addClass('visually-hidden')
+                    }
+                    else{
+                        //error
+                    }
+                },
+                async: false
+            })
+        }
+    </script>
+</head>
+<body onload="updateInformation()">
+<div class="modal fade" id="gamePaused" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="gamePausedLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header text-center">
+                <h5 class="modal-title" id="gamePausedLabel">Пауза</h5>
+            </div>
+            <div id="gamePausedText" class="modal-body text-center">
+                <span>Модератор поставил игру на паузу, подождите, пока он ее снимет.</span>
+            </div>
+            <div class="modal-footer">
+            </div>
+        </div>
+    </div>
+</div>
+<div class="modal fade" id="fieldInfo" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="fieldInfoLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header text-center">
+                <h5 class="modal-title" id="fieldInfoLabel">Урожайность поля</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div id="fieldInfoText" class="modal-body text-center">
+                <span>Подождите...</span>
+                <span>Подождите...</span>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Ок</button>
+            </div>
+        </div>
+    </div>
+</div>
+<div class="modal fade" id="endInfo" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="fieldInfoLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header text-center">
+                <h5 class="modal-title" id="endInfoLabel">Игра закончена</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div id="endInfoText" class="modal-body text-center">
+                <span>Подождите...</span>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" onclick="closeGame()">Покинуть игру</button>
+            </div>
+        </div>
+    </div>
+</div>
+<div class="modal fade" id="makeMove" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="makeMoveLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header text-center">
+                <h5 class="modal-title" id="makeMoveLabel"></h5>
+                <button type="button" class="btn btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body text-center">
+                <h5>Сколько коров вы хотите выставить?</h5>
+                <h5>Сколько коров вы хотите выставить?</h5>
+                <div class="row text-center">
+
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<div id="field" class="container text-center">
+    <div class="row mt-2">
+        <div class="col-sm-12 col-md-12 col-lg-12 col-xxl-12 border" style="cursor:pointer;" onclick="closeGame()">
+            Закрыть игру
+        </div>
+    </div>
+    <div id="makeMoveButton" class="row mt-2 visually-hidden">
+        <div class="col-sm-12 col-md-12 col-lg-12 col-xxl-12 border bg-info" style="cursor:pointer;" onclick="showMakeMoveModal()">
+            Развернуть окно выбора коров
+        </div>
+    </div>
+    <div id="information" class="row mt-2 text-center">
+        <span>Поиск игроков...</span>
+        <span>Емкость поля: 0</span>
+    </div>
+    <div class="row mt-2">
+        <div id="sector1" class="col-6 col-sm-6 col-md-6 col-lg-6 col-xxl-6 border border-4">
+            <div class="container">
+                <div class="row">
+                    <div class="col-12 text-center">
+                        <span>Сектор 1</span>
+                        <br/>
+                        <span>Емкость: 2</span>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-12 text-center">
+                        <img src="The_Cow.png" class="img-fluid" alt="Корова">
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-12 text-center">
+                        <span>Не подключился</span>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-12 text-center">
+                        <span>Монет: </span><span>0</span>
+                    </div>
+                    <div class="col-12 text-center">
+                        <span>Коров</span>
+                    </div>
+                    <div class="col-12 text-center">
+                        <span>В: </span><span class="fw-bold">0</span><span> </span><span>П: </span><span class="fw-bold">0</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div id="sector2" class="col-6 col-sm-6 col-md-6 col-lg-6 col-xxl-6 border border-4">
+            <div class="container">
+                <div class="row">
+                    <div class="col-12 text-center">
+                        <span>Сектор 2</span>
+                        <br/>
+                        <span>Емкость: 2</span>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-12 text-center">
+                        <img src="The_Cow.png" class="img-fluid" alt="Корова">
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-12 text-center">
+                        <span>Не подключился</span>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-12 text-center">
+                        <span>Монет: </span><span>0</span>
+                    </div>
+                    <div class="col-12 text-center">
+                        <span>Коров</span>
+                    </div>
+                    <div class="col-12 text-center">
+                        <span>В: </span><span class="fw-bold">0</span><span> </span><span>П: </span><span class="fw-bold">0</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div id="sector3" class="col-6 col-sm-6 col-md-6 col-lg-6 col-xxl-6 border border-4">
+            <div class="container">
+                <div class="row">
+                    <div class="col-12 text-center">
+                        <span>Сектор 3</span>
+                        <br/>
+                        <span>Емкость: 2</span>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-12 text-center">
+                        <img src="The_Cow.png" class="img-fluid" alt="Корова">
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-12 text-center">
+                        <span>Не подключился</span>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-12 text-center">
+                        <span>Монет: </span><span>0</span>
+                    </div>
+                    <div class="col-12 text-center">
+                        <span>Коров</span>
+                    </div>
+                    <div class="col-12 text-center">
+                        <span>В: </span><span class="fw-bold">0</span><span> </span><span>П: </span><span class="fw-bold">0</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div id="sector4" class="col-6 col-sm-6 col-md-6 col-lg-6 col-xxl-6 border border-4">
+            <div class="container">
+                <div class="row">
+                    <div class="col-12 text-center">
+                        <span>Сектор 4</span>
+                        <br/>
+                        <span>Емкость: 2</span>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-12 text-center">
+                        <img src="The_Cow.png" class="img-fluid" alt="Корова">
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-12 text-center">
+                        <span>Не подключился</span>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-12 text-center">
+                        <span>Монет: </span><span>0</span>
+                    </div>
+                    <div class="col-12 text-center">
+                        <span>Коров</span>
+                    </div>
+                    <div class="col-12 text-center">
+                        <span>В: </span><span class="fw-bold">0</span><span> </span><span>П: </span><span class="fw-bold">0</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+</body>
+</html>
